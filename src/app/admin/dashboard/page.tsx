@@ -371,14 +371,23 @@ export default async function AdminDashboard() {
               </div>
             </div>
 
-            <form action={logout}>
-              <button
-                type="submit"
-                className="w-full rounded-xl border border-white/10 px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
-              >
-                Sign Out
-              </button>
-            </form>
+           <div className="space-y-2">
+  <Link
+    href="/settings"
+    className="block w-full rounded-xl border border-white/10 px-3 py-2.5 text-center text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+  >
+    Settings
+  </Link>
+
+  <form action={logout}>
+    <button
+      type="submit"
+      className="w-full rounded-xl border border-white/10 px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+    >
+      Sign Out
+    </button>
+  </form>
+</div>
           </div>
         </aside>
 
