@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import ChangePasswordForm from "@/components/change-password-form";
+import PaymentMethodForm from "@/components/payment-method-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -28,7 +29,11 @@ export default async function SettingsPage() {
       role,
       title,
       is_active,
-      profile_picture_url
+      profile_picture_url,
+      payment_method,
+      payment_account_name,
+      payment_account_number,
+      payment_bank_name
     `)
     .eq("id", user.id)
     .maybeSingle();
@@ -57,7 +62,7 @@ export default async function SettingsPage() {
           </h1>
 
           <p className="mt-2 text-sm text-slate-500">
-            Manage your account security and password.
+            Manage your account security, password, and payment details.
           </p>
         </div>
 
@@ -106,6 +111,25 @@ export default async function SettingsPage() {
             </p>
 
             <ChangePasswordForm />
+          </div>
+
+          <div className="mt-8 border-t border-white/10 pt-8">
+            <h2 className="text-lg font-semibold">
+              Payment Method
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Add your preferred payment account so commissions can
+              be sent directly to you.
+            </p>
+
+            <PaymentMethodForm
+              fullName={profile.full_name}
+              paymentMethod={profile.payment_method}
+              accountName={profile.payment_account_name}
+              accountNumber={profile.payment_account_number}
+              bankName={profile.payment_bank_name}
+            />
           </div>
         </section>
       </div>

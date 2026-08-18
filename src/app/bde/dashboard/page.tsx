@@ -252,9 +252,9 @@ export default async function BdeDashboard() {
             </nav>
 
             <div className="mt-7 space-y-1">
-   <Link
+  <Link
   href="/bde/message-admin"
-  className="block w-full rounded-xl bg-white/[0.04] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.08]"
+  className="block w-full rounded-xl bg-white/[0.03] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.06]"
 >
   Message Admin
 </Link>

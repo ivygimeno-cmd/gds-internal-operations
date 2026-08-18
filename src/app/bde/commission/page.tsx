@@ -8,24 +8,37 @@ import RealtimeRefresh from "@/components/realtime-refresh";
 function money(value: number | string | null) {
   const amount = Number(value || 0);
 
-  return `${amount.toLocaleString("en-PH", {
+  return `₱${amount.toLocaleString("en-PH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} php`;
+  })}`;
 }
 
-function statusLabel(status: string) {
+function statusLabel(status: string | null) {
   const labels: Record<string, string> = {
-    pending: "Pending",
-    approved: "Approved",
-    paid: "Paid",
-    cancelled: "Cancelled",
+    in_progress: "In Progress",
+    waiting_client: "Waiting for Client",
+    revision: "Revision",
+    testing: "Testing",
+    completed: "Completed",
   };
 
-  return labels[status] ?? status;
+  return labels[status || ""] ?? status ?? "Active";
 }
 
-function statusClass(status: string) {
+function statusClass(status: string | null) {
+  const classes: Record<string, string> = {
+    in_progress: "bg-blue-500/10 text-blue-400",
+    waiting_client: "bg-amber-500/10 text-amber-400",
+    revision: "bg-violet-500/10 text-violet-400",
+    testing: "bg-cyan-500/10 text-cyan-400",
+    completed: "bg-green-500/10 text-green-400",
+  };
+
+  return classes[status || ""] ?? "bg-white/5 text-slate-400";
+}
+
+function commissionStatusClass(status: string) {
   const classes: Record<string, string> = {
     pending: "bg-amber-500/10 text-amber-400",
     approved: "bg-blue-500/10 text-blue-400",
@@ -71,7 +84,59 @@ export default async function CommissionPage() {
     redirect("/");
   }
 
-  let query = admin
+  /*
+   * CURRENT PROJECTS
+   *
+   * These are projects currently claimed by the logged-in BDE.
+   * Completed projects are removed from the current section,
+   * but their commission records remain in Commission History.
+   */
+ const { data: projectData, error: projectError } = await admin
+  .from("work_queue")
+  .select(`
+    id,
+    client_name,
+    business_name,
+    project_name,
+    service_type,
+    status,
+    project_status,
+    claimed_at,
+    created_at
+  `)
+  .eq("claimed_by", user.id)
+  .eq("status", "claimed")
+  .order("claimed_at", {
+    ascending: false,
+  });
+
+if (projectError) {
+  console.error(
+    "BDE Commission - failed to load projects:",
+    projectError
+  );
+}
+
+
+  const currentProjects = (projectData ?? []).filter(
+    (project) => project.project_status !== "completed"
+  );
+  console.log(
+  "BDE Commission - projectData:",
+  projectData
+);
+
+  const currentProjectIds = new Set(
+    currentProjects.map((project) => project.id)
+  );
+
+  /*
+   * COMMISSIONS
+   *
+   * We keep ALL commission records so paid records can remain
+   * permanently visible in Commission History.
+   */
+  const { data: commissions } = await admin
     .from("commissions")
     .select(`
       id,
@@ -82,47 +147,79 @@ export default async function CommissionPage() {
       project_amount,
       commission_rate,
       commission_amount,
+      paid_amount,
       status,
       notes,
       approved_at,
       paid_at,
       created_at
     `)
+    .eq("user_id", user.id)
     .order("created_at", {
       ascending: false,
     });
 
-  if (profile.role !== "admin") {
-    query = query.eq("user_id", user.id);
-  }
-
-  const { data: commissions } = await query;
-
   const rows = commissions ?? [];
 
-  const pendingTotal = rows
-    .filter((row) => row.status === "pending")
-    .reduce(
-      (sum, row) =>
-        sum + Number(row.commission_amount || 0),
-      0
-    );
+  /*
+   * CURRENT COMMISSION
+   *
+   * Only commissions connected to active projects are included
+   * in the Pending / Approved / Paid totals.
+   *
+   * Once the project is completed, the commission remains in
+   * history but no longer contributes to the current totals.
+   */
+ const currentCommissionRows = rows.filter((row) => {
+  if (
+    row.status === "cancelled" ||
+    row.status === "paid"
+  ) {
+    return false;
+  }
 
-  const approvedTotal = rows
-    .filter((row) => row.status === "approved")
-    .reduce(
-      (sum, row) =>
-        sum + Number(row.commission_amount || 0),
-      0
-    );
+  if (!row.work_queue_id) {
+    return true;
+  }
 
-  const paidTotal = rows
-    .filter((row) => row.status === "paid")
-    .reduce(
-      (sum, row) =>
-        sum + Number(row.commission_amount || 0),
-      0
-    );
+  return currentProjectIds.has(row.work_queue_id);
+});
+
+ const approvedTotal = currentCommissionRows
+  .reduce(
+    (sum, row) =>
+      sum + Number(row.commission_amount || 0),
+    0
+  );
+
+const paidTotal = currentCommissionRows
+  .reduce(
+    (sum, row) =>
+      sum + Number(row.paid_amount || 0),
+    0
+  );
+
+const pendingTotal = currentCommissionRows
+  .reduce(
+    (sum, row) =>
+      sum +
+      Math.max(
+        Number(row.commission_amount || 0) -
+          Number(row.paid_amount || 0),
+        0
+      ),
+    0
+  );
+
+  /*
+   * HISTORY
+   *
+   * Only paid commissions are shown here.
+   * These records remain even after the project is completed.
+   */
+  const paidHistory = rows.filter(
+    (row) => row.status === "paid"
+  );
 
   return (
     <main className="min-h-screen bg-[#050b18] text-white">
@@ -173,8 +270,6 @@ export default async function CommissionPage() {
                 My Commission
               </Link>
 
-          
-
               <Link
                 href="/bde/announcements"
                 className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
@@ -184,12 +279,12 @@ export default async function CommissionPage() {
             </nav>
 
             <div className="mt-7">
-              <button
-                type="button"
-                className="w-full rounded-xl px-3 py-2 text-left text-[11px] text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Message Admin
-              </button>
+         <Link
+  href="/bde/message-admin"
+  className="block w-full rounded-xl bg-white/[0.03] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.06]"
+>
+  Message Admin
+</Link>
             </div>
           </div>
 
@@ -213,11 +308,11 @@ export default async function CommissionPage() {
               )}
 
               <div className="min-w-0">
-                <p className="text-sm font-semibold">
+                <p className="truncate text-sm font-semibold">
                   {profile.full_name}
                 </p>
 
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 truncate text-xs text-slate-500">
                   {profile.username}
                 </p>
               </div>
@@ -247,7 +342,7 @@ export default async function CommissionPage() {
               </h1>
 
               <p className="mt-1 text-sm text-slate-500">
-                Track pending, approved and paid commissions.
+                {profile.full_name}
               </p>
             </div>
 
@@ -260,40 +355,130 @@ export default async function CommissionPage() {
           </header>
 
           <div className="p-8">
-            {/* TOTALS */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="text-sm text-slate-500">
-                  Pending
-                </p>
+            {/* CURRENT PROJECTS */}
+            <section className="rounded-2xl border border-white/10 bg-white/[0.03]">
+              <div className="border-b border-white/10 px-6 py-5">
+                <h2 className="text-lg font-semibold">
+                  Current Projects
+                </h2>
 
-                <p className="mt-3 text-2xl font-semibold text-amber-400">
-                  {money(pendingTotal)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="text-sm text-slate-500">
-                  Approved
-                </p>
-
-                <p className="mt-3 text-2xl font-semibold text-blue-400">
-                  {money(approvedTotal)}
+                <p className="mt-1 text-sm text-slate-500">
+                  Active projects currently assigned to you.
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="text-sm text-slate-500">
-                  Paid
-                </p>
+              <div className="p-5">
+                {currentProjects.length === 0 ? (
+                  <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-white/10">
+                    <p className="text-sm text-slate-600">
+                      No active projects.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {currentProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="rounded-xl border border-white/10 bg-[#08111f] p-5"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {project.business_name ||
+                                project.client_name}
+                            </p>
 
-                <p className="mt-3 text-2xl font-semibold text-green-400">
-                  {money(paidTotal)}
+                            <p className="mt-1 truncate text-sm text-slate-300">
+                              {project.project_name}
+                            </p>
+
+                            {project.service_type && (
+                              <p className="mt-1 text-xs text-slate-500">
+                                {project.service_type}
+                              </p>
+                            )}
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusClass(
+                              project.project_status
+                            )}`}
+                          >
+                            {statusLabel(
+                              project.project_status
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* COMMISSION SUMMARY */}
+            <section className="mt-6">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">
+                  Commission Summary
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Current commissions for your active projects.
                 </p>
               </div>
-            </div>
 
-            {/* COMMISSIONS */}
+              <div className="grid gap-4 md:grid-cols-3">
+
+  {/* APPROVED */}
+  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+    <p className="text-sm font-medium text-slate-300">
+      Approved
+    </p>
+
+    <p className="mt-3 text-3xl font-semibold text-blue-400">
+      {money(approvedTotal)}
+    </p>
+
+    <p className="mt-3 text-xs leading-5 text-slate-500">
+      Total approved commission.
+    </p>
+  </div>
+
+  {/* PENDING */}
+  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+    <p className="text-sm font-medium text-slate-300">
+      Pending
+    </p>
+
+    <p className="mt-3 text-3xl font-semibold text-amber-400">
+      {money(pendingTotal)}
+    </p>
+
+    <p className="mt-3 text-xs leading-5 text-slate-500">
+      Commission not yet released.
+    </p>
+  </div>
+
+  {/* PAID */}
+  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+    <p className="text-sm font-medium text-slate-300">
+      Paid
+    </p>
+
+    <p className="mt-3 text-3xl font-semibold text-green-400">
+      {money(paidTotal)}
+    </p>
+
+    <p className="mt-3 text-xs leading-5 text-slate-500">
+      Commission released by GDS.
+    </p>
+  </div>
+
+</div>
+            </section>
+
+            {/* COMMISSION HISTORY */}
             <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03]">
               <div className="border-b border-white/10 px-6 py-5">
                 <h2 className="text-lg font-semibold">
@@ -301,97 +486,78 @@ export default async function CommissionPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  {rows.length} record(s)
+                  Your completed commission payments.
                 </p>
               </div>
 
               <div className="p-5">
-                {rows.length === 0 ? (
-                  <div className="flex min-h-[400px] items-center justify-center rounded-xl border border-dashed border-white/10">
+                {paidHistory.length === 0 ? (
+                  <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10">
                     <div className="text-center">
                       <p className="text-sm text-slate-500">
-                        No commission records yet.
+                        No paid commissions yet.
                       </p>
 
                       <p className="mt-2 text-xs text-slate-600">
-                        Approved client referrals will appear here.
+                        Paid commissions will appear here.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {rows.map((commission) => (
+                  <div className="space-y-3">
+                    {paidHistory.map((commission) => (
                       <div
                         key={commission.id}
-                        className="rounded-2xl border border-white/10 bg-[#08111f] p-5"
+                        className="rounded-xl border border-white/10 bg-[#08111f] p-5"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
-                          <div>
-                            <p className="font-semibold text-white">
-                              {commission.client_name}
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-300">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white">
                               {commission.project_name}
                             </p>
-                          </div>
 
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${statusClass(
-                              commission.status
-                            )}`}
-                          >
-                            {statusLabel(
-                              commission.status
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="mt-5 grid gap-4 border-t border-white/10 pt-4 sm:grid-cols-3">
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
-                              Project Amount
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-300">
-                              {money(
-                                commission.project_amount
-                              )}
+                            <p className="mt-1 text-sm text-slate-400">
+                              {commission.client_name}
                             </p>
                           </div>
 
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
-                              Rate
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-300">
-                              {Number(
-                                commission.commission_rate ||
-                                  0
-                              )}
-                              %
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wide text-slate-600">
-                              Commission
-                            </p>
-
-                            <p className="mt-1 text-sm font-semibold text-green-400">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-green-400">
                               {money(
                                 commission.commission_amount
                               )}
                             </p>
+
+                            <span className="mt-1 inline-flex rounded-full bg-green-500/10 px-2.5 py-1 text-[10px] font-medium text-green-400">
+                              Paid
+                            </span>
                           </div>
                         </div>
 
-                        {commission.notes && (
-                          <p className="mt-4 text-sm leading-6 text-slate-500">
-                            {commission.notes}
-                          </p>
-                        )}
+                        <div className="mt-4 border-t border-white/10 pt-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-xs text-slate-500">
+                              {commission.paid_at
+                                ? `Paid ${new Date(
+                                    commission.paid_at
+                                  ).toLocaleDateString(
+                                    "en-PH",
+                                    {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )}`
+                                : "Paid"}
+                            </p>
+
+                            {commission.notes && (
+                              <p className="max-w-[70%] text-xs text-slate-600">
+                                {commission.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>

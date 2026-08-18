@@ -30,11 +30,17 @@ export async function markAdminMessagesRead(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (
-    !profile ||
-    !profile.is_active ||
-    profile.role !== "admin"
-  ) {
+  if (!profile || !profile.is_active) {
+    throw new Error("Unauthorized.");
+  }
+
+  const allowedRoles = [
+    "admin",
+    "bde",
+    "staff",
+  ];
+
+  if (!allowedRoles.includes(profile.role)) {
     throw new Error("Unauthorized.");
   }
 

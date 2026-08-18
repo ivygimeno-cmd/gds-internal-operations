@@ -13,7 +13,12 @@ export default function MarkAdminMessagesRead({
   useEffect(() => {
     if (!otherUserId) return;
 
-    markAdminMessagesRead(otherUserId);
+    markAdminMessagesRead(otherUserId).catch((error) => {
+      console.error(
+        "Failed to mark messages as read:",
+        error
+      );
+    });
   }, [otherUserId]);
 
   return null;

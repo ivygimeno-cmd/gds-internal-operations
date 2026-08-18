@@ -9,6 +9,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 import { sendTeamMessage } from "@/app/actions/send-team-message";
+import { deleteTeamMessage } from "@/app/actions/delete-team-message";
 
 type Profile = {
   id: string;
@@ -125,6 +126,32 @@ export default function TeamChat({
               );
             }
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "team_messages",
+        },
+        (payload) => {
+          const deletedMessage =
+            payload.old as {
+              id?: string;
+            };
+
+          if (!deletedMessage.id) {
+            return;
+          }
+
+          setMessages((current) =>
+            current.filter(
+              (message) =>
+                message.id !==
+                deletedMessage.id
+            )
+          );
         }
       )
       .subscribe();
@@ -260,6 +287,42 @@ export default function TeamChat({
     messages.length,
   ]);
 
+  /*
+   * DELETE OWN MESSAGE
+   */
+  async function handleDeleteMessage(
+    messageId: string
+  ) {
+    const formData =
+      new FormData();
+
+    formData.append(
+      "message_id",
+      messageId
+    );
+
+    try {
+      await deleteTeamMessage(
+        formData
+      );
+
+      setMessages((current) =>
+        current.filter(
+          (message) =>
+            message.id !== messageId
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Failed to delete team message:",
+        error
+      );
+    }
+  }
+
+  /*
+   * SEND MESSAGE
+   */
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -438,7 +501,7 @@ export default function TeamChat({
                       )}
 
                       <div
-                        className={`rounded-2xl px-4 py-2.5 ${
+                        className={`group relative rounded-2xl px-4 py-2.5 ${
                           mine
                             ? "bg-blue-600 text-white"
                             : "border border-white/10 bg-[#0a1525] text-slate-200"
@@ -447,6 +510,22 @@ export default function TeamChat({
                         <p className="whitespace-pre-wrap text-sm leading-5">
                           {message.message}
                         </p>
+
+                        {mine && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteMessage(
+                                message.id
+                              )
+                            }
+                            className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#07111f] text-[10px] leading-none text-slate-500 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+                            aria-label="Delete message"
+                            title="Delete"
+                          >
+                            ×
+                          </button>
+                        )}
                       </div>
 
                       <p

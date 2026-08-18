@@ -128,12 +128,12 @@ export default async function BdeAnnouncementsPage() {
             </nav>
 
             <div className="mt-7">
-              <button
-                type="button"
-                className="w-full rounded-xl px-3 py-2 text-left text-[11px] text-slate-400 transition hover:bg-white/5 hover:text-white"
-              >
-                Message Admin
-              </button>
+           <Link
+  href="/bde/message-admin"
+  className="block w-full rounded-xl bg-white/[0.03] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.06]"
+>
+  Message Admin
+</Link>
             </div>
           </div>
 
