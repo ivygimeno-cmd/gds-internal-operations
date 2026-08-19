@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const COMMISSION_RATE = 10;
+const COMMISSION_RATE = 15;
 
 export async function adminCreateCommission(
   formData: FormData

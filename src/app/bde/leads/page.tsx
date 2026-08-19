@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+
 import { createLead } from "@/app/actions/create-lead";
 import { updateLead } from "@/app/actions/update-lead";
+
 import RealtimeRefresh from "@/components/realtime-refresh";
+import BdeSidebar from "@/components/bde-sidebar";
 
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
@@ -112,32 +116,30 @@ export default async function LeadsPage({
 
   const allLeads = leads ?? [];
 
-  const filteredLeads = allLeads.filter(
-    (lead) => {
-      const matchesStatus =
-        activeStatus === "all" ||
-        lead.status === activeStatus;
+  const filteredLeads = allLeads.filter((lead) => {
+    const matchesStatus =
+      activeStatus === "all" ||
+      lead.status === activeStatus;
 
-      const searchable = [
-        lead.client_name,
-        lead.business_name,
-        lead.email,
-        lead.phone,
-        lead.source_platform,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    const searchable = [
+      lead.client_name,
+      lead.business_name,
+      lead.email,
+      lead.phone,
+      lead.source_platform,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
 
-      const matchesSearch =
-        !searchQuery ||
-        searchable.includes(
-          searchQuery.toLowerCase()
-        );
+    const matchesSearch =
+      !searchQuery ||
+      searchable.includes(
+        searchQuery.toLowerCase()
+      );
 
-      return matchesStatus && matchesSearch;
-    }
-  );
+    return matchesStatus && matchesSearch;
+  });
 
   const newCount = allLeads.filter(
     (lead) => lead.status === "new"
@@ -183,140 +185,65 @@ export default async function LeadsPage({
   ];
 
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050b18] text-white">
       <RealtimeRefresh />
 
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen flex-col lg:flex-row">
+
+        {/* ====================================================== */}
         {/* SIDEBAR */}
-        <aside className="flex min-h-screen w-[285px] shrink-0 flex-col border-r border-white/10 bg-[#07111f] px-5 py-6">
-          <Link href="/bde/dashboard">
-            <img
-              src="/gds-logo.png"
-              alt="Gimeno Design Solutions"
-              className="h-12 w-auto object-contain"
-            />
-          </Link>
+        {/* ====================================================== */}
 
-          <div className="mt-8">
-            <p className="px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
-              Workspace
-            </p>
+        <BdeSidebar
+          profile={profile}
+          activePage="leads"
+        />
 
-            <nav className="mt-3 space-y-1">
-              <Link
-                href="/bde/dashboard"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Dashboard
-              </Link>
-
-              <Link
-                href="/bde/register"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Register Client
-              </Link>
-
-              <Link
-                href="/bde/leads"
-                className="block rounded-xl bg-blue-600 px-3 py-2.5 text-sm text-white"
-              >
-                My Leads
-              </Link>
-
-              <Link
-                href="/bde/commission"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                My Commission
-              </Link>
-
-            
-
-              <Link
-                href="/bde/announcements"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Announcements
-              </Link>
-            </nav>
-
-            <div className="mt-7">
-           <Link
-  href="/bde/message-admin"
-  className="block w-full rounded-xl bg-white/[0.03] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.06]"
->
-  Message Admin
-</Link>
-            </div>
-          </div>
-
-          <div className="mt-auto border-t border-white/10 pt-5">
-            <div className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
-              {profile.profile_picture_url ? (
-                <img
-                  src={
-                    profile.profile_picture_url
-                  }
-                  alt={profile.full_name}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-xs text-slate-400">
-                  {profile.full_name
-                    .split(" ")
-                    .map(
-                      (part: string) =>
-                        part[0]
-                    )
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-              )}
-
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">
-                  {profile.full_name}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500">
-                  {profile.username}
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
+        {/* ====================================================== */}
         {/* MAIN */}
+        {/* ====================================================== */}
+
         <section className="min-w-0 flex-1">
-          <header className="flex items-center justify-between border-b border-white/10 px-8 py-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-blue-400">
+
+          {/* HEADER */}
+
+          <header className="border-b border-white/10 px-4 py-5 sm:px-6 lg:flex lg:items-center lg:justify-between lg:px-8 lg:py-6">
+
+            <div className="min-w-0">
+
+              <p className="text-[10px] uppercase tracking-[0.18em] text-blue-400 sm:text-xs">
                 GDS Internal Operations
               </p>
 
-              <h1 className="mt-2 text-2xl font-semibold">
+              <h1 className="mt-2 text-2xl font-semibold sm:text-3xl lg:text-2xl">
                 My Leads
               </h1>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
                 Prospects, follow-ups and conversions in one place.
               </p>
+
             </div>
 
             <Link
               href="/bde/dashboard"
-              className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5"
+              className="mt-4 inline-flex rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white lg:mt-0"
             >
               Back to Dashboard
             </Link>
+
           </header>
 
-          <div className="p-8">
+          <div className="p-4 sm:p-6 lg:p-8">
+
+            {/* ================================================== */}
             {/* COUNTS */}
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* ================================================== */}
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+
                 <p className="text-sm text-slate-500">
                   New Leads
                 </p>
@@ -324,9 +251,11 @@ export default async function LeadsPage({
                 <p className="mt-3 text-3xl font-semibold">
                   {newCount}
                 </p>
+
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+
                 <p className="text-sm text-slate-500">
                   Follow-ups
                 </p>
@@ -334,9 +263,11 @@ export default async function LeadsPage({
                 <p className="mt-3 text-3xl font-semibold text-amber-400">
                   {followUpCount}
                 </p>
+
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+
                 <p className="text-sm text-slate-500">
                   Qualified
                 </p>
@@ -344,14 +275,25 @@ export default async function LeadsPage({
                 <p className="mt-3 text-3xl font-semibold text-green-400">
                   {qualifiedCount}
                 </p>
+
               </div>
+
             </div>
 
+            {/* ================================================== */}
             {/* FILTERS + SEARCH */}
-            <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap gap-2">
+            {/* ================================================== */}
+
+            <section className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:mt-6 sm:p-5">
+
+              {/* FILTER SCROLL */}
+
+              <div className="-mx-1 overflow-x-auto px-1 pb-2">
+
+                <div className="flex w-max gap-2">
+
                   {filters.map((filter) => {
+
                     const href =
                       searchQuery
                         ? `/bde/leads?status=${filter.value}&q=${encodeURIComponent(
@@ -360,14 +302,13 @@ export default async function LeadsPage({
                         : `/bde/leads?status=${filter.value}`;
 
                     const isActive =
-                      activeStatus ===
-                      filter.value;
+                      activeStatus === filter.value;
 
                     return (
                       <Link
                         key={filter.value}
                         href={href}
-                        className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
+                        className={`shrink-0 rounded-lg px-3 py-2 text-xs font-medium transition ${
                           isActive
                             ? "bg-blue-600 text-white"
                             : "border border-white/10 text-slate-400 hover:bg-white/5 hover:text-white"
@@ -377,47 +318,61 @@ export default async function LeadsPage({
                       </Link>
                     );
                   })}
+
                 </div>
 
-                <form
-                  action="/bde/leads"
-                  method="get"
-                  className="flex min-w-[280px] gap-2"
-                >
-                  <input
-                    type="hidden"
-                    name="status"
-                    value={activeStatus}
-                  />
-
-                  <input
-                    name="q"
-                    type="search"
-                    defaultValue={
-                      searchQuery
-                    }
-                    placeholder="Search client or business..."
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#08111f] px-4 py-2.5 text-sm outline-none placeholder:text-slate-600 focus:border-blue-500"
-                  />
-
-                  <button
-                    type="submit"
-                    className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5"
-                  >
-                    Search
-                  </button>
-                </form>
               </div>
+
+              {/* SEARCH */}
+
+              <form
+                action="/bde/leads"
+                method="get"
+                className="mt-3 flex w-full flex-col gap-2 sm:flex-row"
+              >
+
+                <input
+                  type="hidden"
+                  name="status"
+                  value={activeStatus}
+                />
+
+                <input
+                  name="q"
+                  type="search"
+                  defaultValue={searchQuery}
+                  placeholder="Search client or business..."
+                  className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm outline-none placeholder:text-slate-600 focus:border-blue-500"
+                />
+
+                <button
+                  type="submit"
+                  className="rounded-xl border border-white/10 px-5 py-3 text-sm text-slate-300 transition hover:bg-white/5"
+                >
+                  Search
+                </button>
+
+              </form>
+
             </section>
 
-            <div className="mt-6 grid gap-6 xl:grid-cols-[390px_1fr]">
+            {/* ================================================== */}
+            {/* ADD LEAD + LEADS */}
+            {/* ================================================== */}
+
+            <div className="mt-5 grid gap-5 lg:mt-6 xl:grid-cols-[390px_1fr]">
+
+              {/* ================================================= */}
               {/* ADD LEAD */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              {/* ================================================= */}
+
+              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+
                 <h2 className="text-lg font-semibold">
                   Add Lead
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   Add a prospect before they become a registered client.
                 </p>
 
@@ -425,6 +380,7 @@ export default async function LeadsPage({
                   action={createLead}
                   className="mt-6 space-y-4"
                 >
+
                   <input
                     name="client_name"
                     required
@@ -456,6 +412,7 @@ export default async function LeadsPage({
                     defaultValue=""
                     className="w-full rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm"
                   >
+
                     <option value="">
                       Source
                     </option>
@@ -483,6 +440,7 @@ export default async function LeadsPage({
                     <option value="Other">
                       Other
                     </option>
+
                   </select>
 
                   <select
@@ -490,6 +448,7 @@ export default async function LeadsPage({
                     defaultValue="new"
                     className="w-full rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm"
                   >
+
                     <option value="new">
                       New
                     </option>
@@ -513,9 +472,11 @@ export default async function LeadsPage({
                     <option value="not_interested">
                       Not Interested
                     </option>
+
                   </select>
 
                   <div>
+
                     <label className="mb-2 block text-xs text-slate-500">
                       Next Follow-up
                     </label>
@@ -525,6 +486,7 @@ export default async function LeadsPage({
                       name="next_follow_up_at"
                       className="w-full rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm"
                     />
+
                   </div>
 
                   <textarea
@@ -536,213 +498,245 @@ export default async function LeadsPage({
 
                   <button
                     type="submit"
-                    className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold hover:bg-blue-500"
+                    className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold transition hover:bg-blue-500"
                   >
                     Add Lead
                   </button>
+
                 </form>
+
               </section>
 
+              {/* ================================================= */}
               {/* LEADS */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.03]">
-                <div className="border-b border-white/10 px-6 py-5">
+              {/* ================================================= */}
+
+              <section className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.03]">
+
+                <div className="border-b border-white/10 px-5 py-5 sm:px-6">
+
                   <h2 className="text-lg font-semibold">
+
                     {activeStatus === "all"
                       ? "All Leads"
-                      : statusLabel(
-                          activeStatus
-                        )}
+                      : statusLabel(activeStatus)}
+
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500">
                     {filteredLeads.length} result(s)
                   </p>
+
                 </div>
 
-                <div className="max-h-[720px] overflow-y-auto p-5">
-                  {filteredLeads.length ===
-                  0 ? (
-                    <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-dashed border-white/10">
-                      <p className="text-sm text-slate-600">
+                <div className="max-h-none overflow-y-visible p-4 sm:max-h-[720px] sm:overflow-y-auto sm:p-5">
+
+                  {filteredLeads.length === 0 ? (
+
+                    <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-dashed border-white/10 sm:min-h-[420px]">
+
+                      <p className="text-center text-sm text-slate-600">
                         No matching leads.
                       </p>
+
                     </div>
+
                   ) : (
+
                     <div className="space-y-4">
-                      {filteredLeads.map(
-                        (lead) => (
-                          <div
-                            key={lead.id}
-                            className="rounded-2xl border border-white/10 bg-[#08111f] p-5"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <p className="font-semibold">
-                                  {
-                                    lead.client_name
-                                  }
+
+                      {filteredLeads.map((lead) => (
+
+                        <div
+                          key={lead.id}
+                          className="rounded-2xl border border-white/10 bg-[#08111f] p-4 sm:p-5"
+                        >
+
+                          {/* LEAD HEADER */}
+
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
+                            <div className="min-w-0">
+
+                              <p className="break-words font-semibold text-white">
+                                {lead.client_name}
+                              </p>
+
+                              {lead.business_name && (
+                                <p className="mt-1 break-words text-sm text-slate-300">
+                                  {lead.business_name}
                                 </p>
+                              )}
 
-                                {lead.business_name && (
-                                  <p className="mt-1 text-sm text-slate-300">
-                                    {
-                                      lead.business_name
-                                    }
-                                  </p>
-                                )}
+                              {lead.source_platform && (
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Source:{" "}
+                                  {lead.source_platform}
+                                </p>
+                              )}
 
-                                {lead.source_platform && (
-                                  <p className="mt-1 text-xs text-slate-500">
-                                    Source:{" "}
-                                    {
-                                      lead.source_platform
-                                    }
-                                  </p>
-                                )}
-                              </div>
-
-                              <span
-                                className={`shrink-0 rounded-full px-3 py-1 text-xs ${statusClass(
-                                  lead.status
-                                )}`}
-                              >
-                                {statusLabel(
-                                  lead.status
-                                )}
-                              </span>
                             </div>
 
-                            {(lead.email ||
-                              lead.phone) && (
-                              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                <div>
-                                  <p className="text-[10px] uppercase text-slate-600">
-                                    Email
-                                  </p>
-
-                                  <p className="mt-1 text-xs text-slate-400">
-                                    {lead.email ||
-                                      "Not provided"}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-[10px] uppercase text-slate-600">
-                                    Phone
-                                  </p>
-
-                                  <p className="mt-1 text-xs text-slate-400">
-                                    {lead.phone ||
-                                      "Not provided"}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-
-                            <form
-                              action={
-                                updateLead
-                              }
-                              className="mt-5 space-y-3 border-t border-white/10 pt-4"
+                            <span
+                              className={`self-start rounded-full px-3 py-1 text-xs ${statusClass(
+                                lead.status
+                              )}`}
                             >
-                              <input
-                                type="hidden"
-                                name="lead_id"
-                                value={lead.id}
-                              />
+                              {statusLabel(lead.status)}
+                            </span>
 
-                              <select
-                                name="status"
-                                defaultValue={
-                                  lead.status
-                                }
-                                className="w-full rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
-                              >
-                                <option value="new">
-                                  New
-                                </option>
-
-                                <option value="contacted">
-                                  Contacted
-                                </option>
-
-                                <option value="interested">
-                                  Interested
-                                </option>
-
-                                <option value="follow_up">
-                                  Follow-up
-                                </option>
-
-                                <option value="qualified">
-                                  Qualified
-                                </option>
-
-                                <option value="not_interested">
-                                  Not Interested
-                                </option>
-
-                                <option value="converted">
-                                  Converted
-                                </option>
-                              </select>
-
-                              <input
-                                type="datetime-local"
-                                name="next_follow_up_at"
-                                defaultValue={
-                                  lead.next_follow_up_at
-                                    ? new Date(
-                                        lead.next_follow_up_at
-                                      )
-                                        .toISOString()
-                                        .slice(
-                                          0,
-                                          16
-                                        )
-                                    : ""
-                                }
-                                className="w-full rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
-                              />
-
-                              <textarea
-                                name="notes"
-                                rows={3}
-                                defaultValue={
-                                  lead.notes ??
-                                  ""
-                                }
-                                placeholder="Notes..."
-                                className="w-full resize-none rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
-                              />
-
-                              <button
-                                type="submit"
-                                className="w-full rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-400 hover:bg-blue-500/20"
-                              >
-                                Update Lead
-                              </button>
-                            </form>
-
-                            {lead.status ===
-                              "qualified" && (
-                              <Link
-                                href={`/bde/register?lead=${lead.id}`}
-                                className="mt-3 block w-full rounded-xl bg-green-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-green-500"
-                              >
-                                Convert to Client
-                              </Link>
-                            )}
                           </div>
-                        )
-                      )}
+
+                          {/* CONTACT DETAILS */}
+
+                          {(lead.email || lead.phone) && (
+
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+
+                              <div className="min-w-0">
+
+                                <p className="text-[10px] uppercase text-slate-600">
+                                  Email
+                                </p>
+
+                                <p className="mt-1 break-all text-xs text-slate-400">
+                                  {lead.email ||
+                                    "Not provided"}
+                                </p>
+
+                              </div>
+
+                              <div className="min-w-0">
+
+                                <p className="text-[10px] uppercase text-slate-600">
+                                  Phone
+                                </p>
+
+                                <p className="mt-1 break-words text-xs text-slate-400">
+                                  {lead.phone ||
+                                    "Not provided"}
+                                </p>
+
+                              </div>
+
+                            </div>
+
+                          )}
+
+                          {/* UPDATE */}
+
+                          <form
+                            action={updateLead}
+                            className="mt-5 space-y-3 border-t border-white/10 pt-4"
+                          >
+
+                            <input
+                              type="hidden"
+                              name="lead_id"
+                              value={lead.id}
+                            />
+
+                            <select
+                              name="status"
+                              defaultValue={lead.status}
+                              className="w-full rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
+                            >
+
+                              <option value="new">
+                                New
+                              </option>
+
+                              <option value="contacted">
+                                Contacted
+                              </option>
+
+                              <option value="interested">
+                                Interested
+                              </option>
+
+                              <option value="follow_up">
+                                Follow-up
+                              </option>
+
+                              <option value="qualified">
+                                Qualified
+                              </option>
+
+                              <option value="not_interested">
+                                Not Interested
+                              </option>
+
+                              <option value="converted">
+                                Converted
+                              </option>
+
+                            </select>
+
+                            <input
+                              type="datetime-local"
+                              name="next_follow_up_at"
+                              defaultValue={
+                                lead.next_follow_up_at
+                                  ? new Date(
+                                      lead.next_follow_up_at
+                                    )
+                                      .toISOString()
+                                      .slice(0, 16)
+                                  : ""
+                              }
+                              className="w-full rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
+                            />
+
+                            <textarea
+                              name="notes"
+                              rows={3}
+                              defaultValue={
+                                lead.notes ?? ""
+                              }
+                              placeholder="Notes..."
+                              className="w-full resize-none rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm"
+                            />
+
+                            <button
+                              type="submit"
+                              className="w-full rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-400 transition hover:bg-blue-500/20"
+                            >
+                              Update Lead
+                            </button>
+
+                          </form>
+
+                          {/* CONVERT */}
+
+                          {lead.status === "qualified" && (
+
+                            <Link
+                              href={`/bde/register?lead=${lead.id}`}
+                              className="mt-3 block w-full rounded-xl bg-green-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-green-500"
+                            >
+                              Convert to Client
+                            </Link>
+
+                          )}
+
+                        </div>
+
+                      ))}
+
                     </div>
+
                   )}
+
                 </div>
+
               </section>
+
             </div>
+
           </div>
+
         </section>
+
       </div>
     </main>
   );

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+import BdeSidebar from "@/components/bde-sidebar";
 import { sendAdminMessage } from "@/app/actions/send-admin-message";
-import { logout } from "@/app/actions/logout";
 import RealtimeRefresh from "@/components/realtime-refresh";
 import MarkAdminMessagesRead from "../../../components/mark-admin-messages-read";
 
@@ -79,168 +81,140 @@ export default async function MessageAdminPage() {
     <main className="h-screen overflow-hidden bg-[#050b18] text-white">
       <RealtimeRefresh />
 
+      {/* IMPORTANT:
+          flex-col on mobile
+          flex-row from md and above
+      */}
+      <div className="flex h-screen flex-col md:flex-row">
 
-      <div className="flex h-screen">
+        {/* ====================================================== */}
         {/* SIDEBAR */}
-        <aside className="flex h-screen w-[285px] shrink-0 flex-col border-r border-white/10 bg-[#07111f] px-5 py-6">
-          <Link href="/bde/dashboard">
-            <img
-              src="/gds-logo.png"
-              alt="Gimeno Design Solutions"
-              className="h-12 w-auto object-contain"
-            />
-          </Link>
+        {/* ====================================================== */}
 
-          <div className="mt-8">
-            <p className="px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
-              Workspace
-            </p>
+        <BdeSidebar
+          profile={profile}
+          activePage="message-admin"
+        />
 
-            <nav className="mt-3 space-y-1">
-              <Link
-                href="/bde/dashboard"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Dashboard
-              </Link>
+        {/* ====================================================== */}
+        {/* MAIN */}
+        {/* ====================================================== */}
 
-              <Link
-                href="/bde/register"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Register Client
-              </Link>
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col">
 
-              <Link
-                href="/bde/leads"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                My Leads
-              </Link>
+          {/* HEADER */}
 
-              <Link
-                href="/bde/commission"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                My Commission
-              </Link>
+          <header className="shrink-0 border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
 
-              <Link
-                href="/bde/announcements"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white"
-              >
-                Announcements
-              </Link>
-            </nav>
-
-            <div className="mt-7">
-              <Link
-                href="/bde/message-admin"
-                className="block w-full rounded-xl bg-blue-600 px-3 py-2.5 text-left text-sm text-white"
-              >
-                Message Admin
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-auto border-t border-white/10 pt-5">
-            <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
-              {profile.profile_picture_url ? (
-                <img
-                  src={profile.profile_picture_url}
-                  alt={profile.full_name}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-xs text-slate-400">
-                  {profile.full_name
-                    .split(" ")
-                    .map((part: string) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-              )}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">
-                  {profile.full_name}
+
+                <p className="text-[10px] uppercase tracking-[0.18em] text-blue-400 sm:text-xs">
+                  GDS Internal Operations
                 </p>
 
-                <p className="mt-1 truncate text-xs text-slate-500">
-                  {profile.username}
+                <h1 className="mt-2 text-xl font-semibold sm:text-2xl">
+                  Message Admin
+                </h1>
+
+                <p className="mt-1 truncate text-xs text-slate-500 sm:text-sm">
+                  Private conversation with{" "}
+                  {adminProfile.full_name}.
                 </p>
+
               </div>
+
+              <Link
+                href="/bde/dashboard"
+                className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-slate-300 transition hover:bg-white/5 hover:text-white sm:w-auto"
+              >
+                Back to Dashboard
+              </Link>
+
             </div>
 
-            <form action={logout}>
-              <button
-                type="submit"
-                className="w-full rounded-xl border border-white/10 px-3 py-2.5 text-sm text-slate-300 hover:bg-white/5"
-              >
-                Sign Out
-              </button>
-            </form>
-          </div>
-        </aside>
-
-        {/* MAIN */}
-        <section className="flex min-w-0 flex-1 flex-col">
-          <header className="border-b border-white/10 px-8 py-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-blue-400">
-              GDS Internal Operations
-            </p>
-
-            <h1 className="mt-2 text-2xl font-semibold">
-              Message Admin
-            </h1>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Private conversation with {adminProfile.full_name}.
-            </p>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col p-8">
-            <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-white/10 bg-white/[0.03]">
-              <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
+          {/* ====================================================== */}
+          {/* CHAT */}
+          {/* ====================================================== */}
+
+          <div className="min-h-0 flex-1 p-3 sm:p-5 lg:p-8">
+
+            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+
+              {/* ADMIN HEADER */}
+
+              <div className="flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-4 sm:px-6 sm:py-5">
+
                 {adminProfile.profile_picture_url ? (
                   <img
                     src={adminProfile.profile_picture_url}
                     alt={adminProfile.full_name}
-                    className="h-11 w-11 rounded-full object-cover"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover sm:h-11 sm:w-11"
                   />
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 text-xs text-slate-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs text-slate-400 sm:h-11 sm:w-11">
                     {adminProfile.full_name
                       .split(" ")
-                      .map((part: string) => part[0])
+                      .map(
+                        (part: string) => part[0]
+                      )
                       .join("")
                       .slice(0, 2)
                       .toUpperCase()}
                   </div>
                 )}
 
-                <div>
-                  <p className="font-semibold">
+                <div className="min-w-0">
+
+                  <p className="truncate text-sm font-semibold sm:text-base">
                     {adminProfile.full_name}
                   </p>
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">
                     Admin
                   </p>
+
                 </div>
+
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              {/* MARK MESSAGES READ */}
+
+              <MarkAdminMessagesRead
+                otherUserId={adminProfile.id}
+              />
+
+              {/* MESSAGES */}
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+
                 {!messages || messages.length === 0 ? (
-                  <div className="flex h-full min-h-[400px] items-center justify-center">
-                    <p className="text-sm text-slate-600">
-                      No messages yet.
-                    </p>
+
+                  <div className="flex h-full min-h-[250px] items-center justify-center">
+
+                    <div className="px-5 text-center">
+
+                      <p className="text-sm text-slate-500">
+                        No messages yet.
+                      </p>
+
+                      <p className="mt-2 text-xs leading-5 text-slate-600">
+                        Send a message to contact the admin.
+                      </p>
+
+                    </div>
+
                   </div>
+
                 ) : (
-                  <div className="space-y-4">
+
+                  <div className="space-y-3 sm:space-y-4">
+
                     {messages.map((item) => {
+
                       const mine =
                         item.sender_id === user.id;
 
@@ -253,19 +227,21 @@ export default async function MessageAdminPage() {
                               : "justify-start"
                           }`}
                         >
+
                           <div
-                            className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                            className={`max-w-[88%] break-words rounded-2xl px-3.5 py-2.5 sm:max-w-[70%] sm:px-4 sm:py-3 ${
                               mine
                                 ? "bg-blue-600 text-white"
                                 : "border border-white/10 bg-[#08111f] text-slate-200"
                             }`}
                           >
-                            <p className="whitespace-pre-wrap text-sm leading-6">
+
+                            <p className="whitespace-pre-wrap break-words text-sm leading-6">
                               {item.message}
                             </p>
 
                             <p
-                              className={`mt-2 text-[10px] ${
+                              className={`mt-2 text-[9px] sm:text-[10px] ${
                                 mine
                                   ? "text-blue-200"
                                   : "text-slate-600"
@@ -275,38 +251,53 @@ export default async function MessageAdminPage() {
                                 item.created_at
                               ).toLocaleString()}
                             </p>
+
                           </div>
+
                         </div>
                       );
                     })}
+
                   </div>
+
                 )}
+
               </div>
+
+              {/* MESSAGE FORM */}
 
               <form
                 action={sendAdminMessage}
-                className="shrink-0 border-t border-white/10 p-5"
+                className="shrink-0 border-t border-white/10 p-3 sm:p-5"
               >
-                <div className="flex gap-3">
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+
                   <textarea
                     name="message"
                     required
                     rows={2}
                     placeholder="Write a message..."
-                    className="min-w-0 flex-1 resize-none rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+                    className="min-h-[52px] min-w-0 flex-1 resize-none rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
                   />
 
                   <button
                     type="submit"
-                    className="self-end rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+                    className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 sm:w-auto sm:self-end"
                   >
                     Send
                   </button>
+
                 </div>
+
               </form>
+
             </section>
+
           </div>
+
         </section>
+
       </div>
     </main>
   );

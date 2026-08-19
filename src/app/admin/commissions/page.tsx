@@ -6,11 +6,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { adminCreateCommission } from "@/app/actions/admin-create-commission";
 import { adminSaveCommission } from "@/app/actions/admin-save-commission";
+import { adminEditCommission } from "@/app/actions/admin-edit-commission";
 
 import RealtimeRefresh from "@/components/realtime-refresh";
 import CommissionProjectSelector from "@/components/commission-project-selector";
 
-const COMMISSION_RATE = 10;
+const COMMISSION_RATE = 15;
 
 function money(value: number | string | null) {
   const amount = Number(value || 0);
@@ -75,7 +76,7 @@ export default async function AdminCommissionsPage() {
     redirect("/");
   }
 
-  /*
+   /*
    * ONLY CLAIMED PROJECTS
    *
    * Unclaimed projects do not appear.
@@ -100,64 +101,6 @@ export default async function AdminCommissionsPage() {
     });
 
   /*
-   * GET THE PEOPLE WHO REGISTERED
-   * THE CLAIMED PROJECTS
-   */
-  const submittedByIds = [
-    ...new Set(
-      (claimedProjects ?? [])
-        .map((project) => project.submitted_by)
-        .filter(Boolean)
-    ),
-  ];
-
-  const { data: registeredProfiles } =
-    submittedByIds.length > 0
-      ? await admin
-          .from("profiles")
-          .select(`
-  id,
-  full_name,
-  username,
-  role,
-  title,
-  payment_method,
-  payment_account_name,
-  payment_account_number,
-  payment_bank_name
-`)
-          .in("id", submittedByIds)
-      : { data: [] };
-
-  const registeredProfileMap = new Map(
-    (registeredProfiles ?? []).map((person) => [
-      person.id,
-      person,
-    ])
-  );
-
-  /*
-   * PROJECT OPTIONS
-   *
-   * These are passed to the project selector.
-   * Only claimed projects are included.
-   */
-  const projectOptions = (
-    claimedProjects ?? []
-  ).map((project) => ({
-    id: project.id,
-    client_name: project.client_name,
-    business_name: project.business_name,
-    project_name: project.project_name,
-
-    registered_by_name: project.submitted_by
-      ? registeredProfileMap.get(
-          project.submitted_by
-        )?.full_name ?? null
-      : null,
-  }));
-
-  /*
    * ALL COMMISSION RECORDS
    *
    * Paid records remain in the database.
@@ -169,6 +112,7 @@ export default async function AdminCommissionsPage() {
     .select(`
       id,
       user_id,
+      work_queue_id,
       client_name,
       project_name,
       project_amount,
@@ -184,6 +128,130 @@ export default async function AdminCommissionsPage() {
     });
 
   const rows = commissions ?? [];
+
+  /*
+   * FULLY PAID PROJECT IDS
+   *
+   * Once a commission is fully paid,
+   * its project must disappear from
+   * the Add Commission selector.
+   */
+  /*
+ * CLAIMED PROJECTS AVAILABLE FOR NEW COMMISSIONS
+ *
+ * Once a project already has a commission,
+ * it must disappear from Add Commission.
+ *
+ * This prevents creating duplicate commissions
+ * for the same project.
+ *
+ * Cancelled commissions are excluded so a cancelled
+ * commission can be created again if needed.
+ */
+const commissionedWorkQueueIds = new Set(
+  rows
+    .filter(
+      (commission) =>
+        commission.status !== "cancelled" &&
+        commission.work_queue_id
+    )
+    .map(
+      (commission) =>
+        commission.work_queue_id
+    )
+);
+
+const availableClaimedProjects = (
+  claimedProjects ?? []
+).filter(
+  (project) =>
+    !commissionedWorkQueueIds.has(project.id)
+);
+  /*
+   * GET BDE / VA PROFILES
+   *
+   * We include both:
+   * - owners of available projects
+   * - owners of existing commissions
+   *
+   * This keeps old paid history showing the
+   * correct BDE / VA name.
+   */
+  const submittedByIds = [
+    ...new Set(
+      [
+        ...availableClaimedProjects.map(
+          (project) =>
+            project.submitted_by
+        ),
+        ...rows.map(
+          (commission) =>
+            commission.user_id
+        ),
+      ].filter(Boolean)
+    ),
+  ];
+
+  const { data: registeredProfiles } =
+    submittedByIds.length > 0
+      ? await admin
+          .from("profiles")
+          .select(`
+            id,
+            full_name,
+            username,
+            role,
+            title,
+            payment_method,
+            payment_account_name,
+            payment_account_number,
+            payment_bank_name
+          `)
+          .in(
+            "id",
+            submittedByIds
+          )
+      : { data: [] };
+
+  /*
+   * PROFILE LOOKUP
+   */
+  const registeredProfileMap =
+    new Map(
+      (registeredProfiles ?? []).map(
+        (person) => [
+          person.id,
+          person,
+        ]
+      )
+    );
+
+  /*
+   * PROJECT OPTIONS
+   *
+   * These are passed into the
+   * CommissionProjectSelector component.
+   */
+  const projectOptions =
+    availableClaimedProjects.map(
+      (project) => ({
+        id: project.id,
+        client_name:
+          project.client_name,
+        business_name:
+          project.business_name,
+        project_name:
+          project.project_name,
+        submitted_by:
+          project.submitted_by,
+        registered_by_name:
+          project.submitted_by
+            ? registeredProfileMap.get(
+                project.submitted_by
+              )?.full_name ?? null
+            : null,
+      })
+    );
 
   /*
    * ACTIVE COMMISSIONS
@@ -282,6 +350,17 @@ export default async function AdminCommissionsPage() {
             <CommissionProjectSelector
               projects={projectOptions}
             />
+            {availableClaimedProjects.length === 0 && (
+  <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-3">
+    <p className="text-xs text-slate-500">
+      No claimed projects are available for a new commission.
+    </p>
+
+    <p className="mt-1 text-xs text-slate-600">
+      Projects with existing commissions cannot be created again.
+    </p>
+  </div>
+)}
 
             {/* PROJECT AMOUNT */}
             <div>
@@ -331,11 +410,18 @@ export default async function AdminCommissionsPage() {
             />
 
             <button
-              type="submit"
-              className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold hover:bg-blue-500"
-            >
-              Create Commission
-            </button>
+  type="submit"
+  disabled={availableClaimedProjects.length === 0}
+  className={`w-full rounded-xl px-4 py-3 text-sm font-semibold transition ${
+    availableClaimedProjects.length === 0
+      ? "cursor-not-allowed bg-slate-800 text-slate-500"
+      : "bg-blue-600 text-white hover:bg-blue-500"
+  }`}
+>
+  {availableClaimedProjects.length === 0
+    ? "No Projects Available"
+    : "Create Commission"}
+</button>
           </form>
         </section>
 
@@ -460,6 +546,82 @@ export default async function AdminCommissionsPage() {
 
                       {/* EXPANDED DETAILS */}
                       <div className="border-t border-white/10 p-5">
+
+                      {/* EDIT COMMISSION */}
+<form
+  action={adminEditCommission}
+  className="mb-5 rounded-xl border border-blue-500/20 bg-blue-500/[0.03] p-4"
+>
+  <input
+    type="hidden"
+    name="commission_id"
+    value={commission.id}
+  />
+
+  <div className="flex items-center justify-between gap-4">
+    <div>
+      <p className="text-sm font-semibold text-white">
+        Edit Commission
+      </p>
+
+      <p className="mt-1 text-xs text-slate-500">
+        Update the project amount or correct the commission.
+        The current paid amount will be preserved.
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <div>
+      <label className="mb-2 block text-xs text-slate-500">
+        Project Amount
+      </label>
+
+      <input
+        name="project_amount"
+        type="number"
+        min="0"
+        step="0.01"
+        required
+        defaultValue={commission.project_amount}
+        className="w-full rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
+      />
+    </div>
+
+    <div>
+      <label className="mb-2 block text-xs text-slate-500">
+        Commission Rate
+      </label>
+
+      <div className="flex h-[46px] items-center rounded-xl border border-white/10 bg-[#050b18] px-4">
+        <span className="text-sm font-semibold text-blue-400">
+          {COMMISSION_RATE}%
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div className="mt-4">
+    <label className="mb-2 block text-xs text-slate-500">
+      Notes
+    </label>
+
+    <textarea
+      name="notes"
+      rows={2}
+      defaultValue={commission.notes ?? ""}
+      placeholder="Optional notes"
+      className="w-full resize-none rounded-xl border border-white/10 bg-[#050b18] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none focus:border-blue-500"
+    />
+  </div>
+
+  <button
+    type="submit"
+    className="mt-4 w-full rounded-xl border border-blue-500/30 bg-blue-600/10 px-4 py-3 text-sm font-semibold text-blue-400 transition hover:bg-blue-600 hover:text-white"
+  >
+    Save Commission Changes
+  </button>
+</form>
 
                         <form
                           action={adminSaveCommission}

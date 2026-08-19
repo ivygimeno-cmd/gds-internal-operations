@@ -133,25 +133,45 @@ export default async function ManagementPage({
     redirect("/");
   }
 
-  const { data: employees } = await admin
-    .from("profiles")
-    .select(`
-      id,
-      username,
-      full_name,
-      role,
-      title,
-      is_active,
-      profile_picture_url,
-      availability_status,
-      available_again_at,
-      availability_note,
-      created_at
-    `);
+ const { data: employees } = await admin
+  .from("profiles")
+  .select(`
+    id,
+    username,
+    full_name,
+    role,
+    title,
+    is_active,
+    profile_picture_url,
+    availability_status,
+    available_again_at,
+    availability_note,
+    created_at
+  `);
 
-  const sortedEmployees = [
-    ...(employees ?? []),
-  ].sort((a, b) => {
+const { data: authUsers } =
+  await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  });
+
+const lastSignInMap = new Map(
+  (authUsers.users ?? []).map((authUser) => [
+    authUser.id,
+    authUser.last_sign_in_at,
+  ])
+);
+
+const employeesWithLastLogin =
+  (employees ?? []).map((employee) => ({
+    ...employee,
+    last_sign_in_at:
+      lastSignInMap.get(employee.id) ?? null,
+  }));
+
+ const sortedEmployees = [
+  ...employeesWithLastLogin,
+].sort((a, b) => {
     const rankA = roleRank(
       a.role,
       a.title
@@ -454,7 +474,25 @@ export default async function ManagementPage({
                                 : "Inactive Account"}
                             </span>
                           </div>
+<div className="mt-4">
+  <p className="text-xs text-slate-600">
+    Last login
+  </p>
 
+  <p className="mt-1 text-xs text-slate-400">
+    {employee.last_sign_in_at
+      ? new Date(
+          employee.last_sign_in_at
+        ).toLocaleString("en-PH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "Never logged in"}
+  </p>
+</div>
                           {productionEmployee &&
                             employee.available_again_at && (
                               <p className="mt-4 text-xs text-slate-500">

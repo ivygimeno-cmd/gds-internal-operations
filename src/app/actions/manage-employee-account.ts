@@ -169,3 +169,36 @@ export async function reactivateEmployee(
   revalidatePath("/admin/dashboard");
   revalidatePath("/developer/dashboard");
 }
+
+export async function updateEmployeeAdminNotes(
+  formData: FormData
+): Promise<void> {
+  const admin = await requireAdmin();
+
+  const employeeId = String(
+    formData.get("employee_id") || ""
+  ).trim();
+
+  const adminNotes = String(
+    formData.get("admin_notes") || ""
+  ).trim();
+
+  if (!employeeId) {
+    throw new Error("Invalid employee.");
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      admin_notes: adminNotes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", employeeId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/management/${employeeId}`);
+  revalidatePath("/admin/management");
+}

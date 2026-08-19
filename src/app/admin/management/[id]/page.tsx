@@ -8,6 +8,7 @@ import { manageEmployeeStatus } from "@/app/actions/manage-employee-status";
 
 import {
   updateEmployeeProfile,
+  updateEmployeeAdminNotes,
   changeEmployeePassword,
   suspendEmployee,
   reactivateEmployee,
@@ -48,20 +49,21 @@ export default async function ManageEmployeePage({
 
   const { data: employee } = await admin
     .from("profiles")
-    .select(
-      `
-      id,
-      username,
-      full_name,
-      role,
-      title,
-      profile_picture_url,
-      availability_status,
-      available_again_at,
-      availability_note,
-      is_active
-      `
-    )
+   .select(
+  `
+  id,
+  username,
+  full_name,
+  role,
+  title,
+  profile_picture_url,
+  availability_status,
+  available_again_at,
+  availability_note,
+  admin_notes,
+  is_active
+  `
+)
     .eq("id", id)
     .maybeSingle();
 
@@ -284,7 +286,46 @@ export default async function ManageEmployeePage({
                   Save Profile Changes
                 </button>
               </form>
+
+        
             </div>
+
+            {/* ADMIN NOTES */}
+<div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+  <h2 className="text-lg font-semibold">
+    Admin Notes
+  </h2>
+
+  <p className="mt-1 text-sm text-slate-500">
+    Private notes for administrators only. Employees cannot see these notes.
+  </p>
+
+  <form
+    action={updateEmployeeAdminNotes}
+    className="mt-6"
+  >
+    <input
+      type="hidden"
+      name="employee_id"
+      value={employee.id}
+    />
+
+    <textarea
+      name="admin_notes"
+      rows={4}
+      defaultValue={employee.admin_notes ?? ""}
+      placeholder="Example: This is a practice account."
+      className="w-full resize-none rounded-xl border border-white/10 bg-[#08111f] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+    />
+
+    <button
+      type="submit"
+      className="mt-4 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
+    >
+      Save Admin Note
+    </button>
+  </form>
+</div>
 
             {/* WORK STATUS */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">

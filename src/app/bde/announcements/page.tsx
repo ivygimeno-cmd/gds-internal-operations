@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { logout } from "@/app/actions/logout";
+
 import RealtimeRefresh from "@/components/realtime-refresh";
+import BdeSidebar from "@/components/bde-sidebar";
 
 export default async function BdeAnnouncementsPage() {
   const supabase = await createClient();
@@ -69,199 +71,151 @@ export default async function BdeAnnouncementsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#050b18] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050b18] text-white">
       <RealtimeRefresh />
 
-      <div className="flex min-h-screen">
-        {/* SIDEBAR */}
-        <aside className="flex min-h-screen w-[285px] shrink-0 flex-col border-r border-white/10 bg-[#07111f] px-5 py-6">
-          <Link href="/bde/dashboard">
-            <img
-              src="/gds-logo.png"
-              alt="Gimeno Design Solutions"
-              className="h-12 w-auto object-contain"
-            />
-          </Link>
+      <div className="min-h-screen md:flex">
 
-          <div className="mt-8">
-            <p className="px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
-              Workspace
-            </p>
+        {/* ====================================================== */}
+        {/* SIDEBAR + MOBILE NAV */}
+        {/* ====================================================== */}
 
-            <nav className="mt-3 space-y-1">
-              <Link
-                href="/bde/dashboard"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
-              >
-                Dashboard
-              </Link>
+        <BdeSidebar
+          profile={profile}
+          activePage="announcements"
+        />
 
-              <Link
-                href="/bde/register"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
-              >
-                Register Client
-              </Link>
+        {/* ====================================================== */}
+        {/* MAIN */}
+        {/* ====================================================== */}
 
-              <Link
-                href="/bde/leads"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
-              >
-                My Leads
-              </Link>
+        <section className="min-w-0 flex-1">
 
-              <Link
-                href="/bde/commission"
-                className="block rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-white/5 hover:text-white"
-              >
-                My Commission
-              </Link>
+          {/* HEADER */}
 
-    
+          <header className="border-b border-white/10 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
 
-              <Link
-                href="/bde/announcements"
-                className="block rounded-xl bg-blue-600 px-3 py-2.5 text-sm text-white"
-              >
-                Announcements
-              </Link>
-            </nav>
-
-            <div className="mt-7">
-           <Link
-  href="/bde/message-admin"
-  className="block w-full rounded-xl bg-white/[0.03] px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/[0.06]"
->
-  Message Admin
-</Link>
-            </div>
-          </div>
-
-          {/* ACCOUNT */}
-          <div className="mt-auto border-t border-white/10 pt-5">
-            <div className="mb-3 flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
-              {profile.profile_picture_url ? (
-                <img
-                  src={profile.profile_picture_url}
-                  alt={profile.full_name}
-                  className="h-10 w-10 shrink-0 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 text-xs font-semibold text-slate-400">
-                  {profile.full_name
-                    .split(" ")
-                    .map((part: string) => part[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
-              )}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-white">
-                  {profile.full_name}
+
+                <p className="text-[10px] uppercase tracking-[0.18em] text-blue-400 sm:text-xs">
+                  GDS Internal Operations
                 </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  {profile.username}
+                <h1 className="mt-2 text-2xl font-semibold">
+                  Announcements
+                </h1>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Internal updates and notices from GDS.
                 </p>
+
               </div>
-            </div>
 
-            <form action={logout}>
-              <button
-                type="submit"
-                className="w-full rounded-xl border border-white/10 px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
+              <Link
+                href="/bde/dashboard"
+                className="w-full rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-slate-300 transition hover:bg-white/5 hover:text-white sm:w-auto"
               >
-                Sign Out
-              </button>
-            </form>
-          </div>
-        </aside>
+                Back to Dashboard
+              </Link>
 
-        {/* MAIN */}
-        <section className="min-w-0 flex-1">
-          <header className="flex items-center justify-between border-b border-white/10 px-8 py-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-blue-400">
-                GDS Internal Operations
-              </p>
-
-              <h1 className="mt-2 text-2xl font-semibold">
-                Announcements
-              </h1>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Internal updates and notices from GDS.
-              </p>
             </div>
 
-            <Link
-              href="/bde/dashboard"
-              className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white"
-            >
-              Back to Dashboard
-            </Link>
           </header>
 
-          <div className="mx-auto max-w-5xl p-8">
+          {/* CONTENT */}
+
+          <div className="mx-auto w-full max-w-5xl p-4 sm:p-6 lg:p-8">
+
             {activeAnnouncements.length === 0 ? (
-              <div className="flex min-h-[500px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02]">
+
+              <div className="flex min-h-[350px] items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-5 sm:min-h-[500px]">
+
                 <div className="text-center">
+
                   <p className="text-sm text-slate-500">
                     No active announcements.
                   </p>
 
-                  <p className="mt-2 text-xs text-slate-600">
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
                     Company updates will appear here.
                   </p>
+
                 </div>
+
               </div>
+
             ) : (
-              <div className="space-y-5">
+
+              <div className="space-y-4 sm:space-y-5">
+
                 {activeAnnouncements.map((announcement) => (
+
                   <article
                     key={announcement.id}
-                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+                    className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-6"
                   >
-                    <div className="flex items-start justify-between gap-5">
-                      <div>
-                        <h2 className="text-xl font-semibold text-white">
+
+                    {/* TITLE + BADGE */}
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+
+                      <div className="min-w-0">
+
+                        <h2 className="break-words text-lg font-semibold text-white sm:text-xl">
                           {announcement.title}
                         </h2>
 
-                        <p className="mt-2 text-xs text-slate-600">
+                        <p className="mt-2 text-[11px] text-slate-600 sm:text-xs">
                           {new Date(
                             announcement.created_at
                           ).toLocaleString()}
                         </p>
+
                       </div>
 
-                      <span className="shrink-0 rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                      <span className="self-start rounded-full bg-blue-500/10 px-3 py-1 text-[10px] font-medium text-blue-400 sm:text-xs">
                         GDS Announcement
                       </span>
+
                     </div>
 
-                    <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-slate-300">
+                    {/* MESSAGE */}
+
+                    <p className="mt-5 break-words whitespace-pre-wrap text-sm leading-7 text-slate-300">
                       {announcement.message}
                     </p>
 
+                    {/* EXPIRATION */}
+
                     {announcement.expires_at && (
+
                       <div className="mt-5 border-t border-white/10 pt-4">
-                        <p className="text-xs text-slate-600">
+
+                        <p className="break-words text-[11px] leading-5 text-slate-600 sm:text-xs">
                           Available until:{" "}
                           {new Date(
                             announcement.expires_at
                           ).toLocaleString()}
                         </p>
+
                       </div>
+
                     )}
+
                   </article>
+
                 ))}
+
               </div>
+
             )}
+
           </div>
+
         </section>
+
       </div>
     </main>
   );

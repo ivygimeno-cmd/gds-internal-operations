@@ -44,6 +44,19 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function getDisplayName(name: string) {
+  const parts = name.trim().split(/\s+/);
+
+  if (parts.length <= 1) {
+    return parts[0] || "Team Member";
+  }
+
+  const firstName = parts[0];
+  const lastName = parts[parts.length - 1];
+
+  return `${firstName} ${lastName.charAt(0)}.`;
+}
+
 export default function TeamChat({
   currentUser,
   teamMembers,
@@ -495,8 +508,9 @@ export default function TeamChat({
                     <div className="max-w-[82%]">
                       {!mine && (
                         <p className="mb-1 ml-1 text-[10px] font-semibold text-slate-500">
-                          {sender?.full_name ??
-                            "Team Member"}
+                          {sender
+  ? getDisplayName(sender.full_name)
+  : "Team Member"}
                         </p>
                       )}
 
